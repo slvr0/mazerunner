@@ -2,8 +2,10 @@
 #include "src/maze_application.h"
 
 int main() 
-{  
-    MazeApplication maze_app;
+{
+
+
+    MazeApplication().run();
 
     std::cout << "its working! \n";
     
