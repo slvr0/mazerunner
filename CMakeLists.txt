@@ -5,18 +5,20 @@ project(MAZERUNNER)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_library(
-maze_application
-src/maze_application.h
-src/maze_application.cpp
-src/maze_structure.h
-src/maze_structure.cpp
-src/environment.cpp
-)
+add_subdirectory(src/)
+add_subdirectory(paho.mqtt.cpp/)
 
 add_executable(main main.cpp)
 
-target_link_libraries(main PRIVATE maze_application)
+find_package(Qt5 COMPONENTS Widgets REQUIRED)
+find_package(Qt5 COMPONENTS Core REQUIRED)
+find_package(Qt5 COMPONENTS Network REQUIRED)
+
+target_include_directories(main PUBLIC)
+
+target_link_libraries(main PRIVATE maze_application maze_comm)
+
+
 
 #add_subdirectory(src)
 

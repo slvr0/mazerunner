@@ -90,8 +90,7 @@ void StateTransitionMapLevel1::FillTransitionMap()
     transition_map_[49] = -1; 
     transition_map_[50] = -1; 
     transition_map_[51] = -1; 
-
-    
+   
     transition_map_[48+4] = 14;
     transition_map_[49+4] = 9; 
     transition_map_[50+4] = -1; 
@@ -106,85 +105,7 @@ void StateTransitionMapLevel1::FillTransitionMap()
     transition_map_[57+4] = 11;
     transition_map_[58+4] = 15;
     transition_map_[59+4] = -1; 
-    /*   
-
-    transition_map_[0][0] = 1;
-    transition_map_[0][2] = -1;
-    transition_map_[0][4] = -1;
-    transition_map_[0][8] = -1;
-
-    transition_map_[1][0] = 2;
-    transition_map_[1][2] = -1;
-    transition_map_[1][4] = 0; 
-    transition_map_[1][8] = -1;
-
-    transition_map_[2][0] = 3;
-    transition_map_[2][2] = -1;
-    transition_map_[2][4] = 1; 
-    transition_map_[2][8] = -1; 
-
-    transition_map_[3][0] = -1;
-    transition_map_[3][2] = -1; 
-    transition_map_[3][4] = 2; 
-    transition_map_[3][8] = 7; 
-     
-    transition_map_[4][0] = 5;
-    transition_map_[4][2] = -1; 
-    transition_map_[4][4] = -1;
-    transition_map_[4][8] = 8;
     
-    transition_map_[5][0] = -1; 
-    transition_map_[5][2] = -1; 
-    transition_map_[5][4] = 4; 
-    transition_map_[5][8] = 9;
-
-    transition_map_[6][0] = 7;
-    transition_map_[6][2] = -1; 
-    transition_map_[6][4] = -1;
-    transition_map_[6][8] = -1;
-
-    transition_map_[7][0] = -1;    
-    transition_map_[7][2] = 3; 
-    transition_map_[7][4] = 6; 
-    transition_map_[7][8] = 11;     
-   
-    transition_map_[8][0] = -1;
-    transition_map_[8][2] = 4;      
-    transition_map_[8][4] = -1; 
-    transition_map_[8][8] = 12;
-    
-    transition_map_[9][0] = -1;
-    transition_map_[9][2] = 5; 
-    transition_map_[9][4] = -1;
-    transition_map_[9][8] = 13;
-
-    transition_map_[10][0] = 11; 
-    transition_map_[10][2] = -1;
-    transition_map_[10][4] = -1;
-    transition_map_[10][8] = 14;
-    
-    transition_map_[11][0] = -1;
-    transition_map_[11][2] = 7; 
-    transition_map_[11][4] = 10; 
-    transition_map_[11][8] = 16;     
-    
-    transition_map_[13][0] = 14;
-    transition_map_[13][2] = 9; 
-    transition_map_[13][4] = -1; 
-    transition_map_[13][8] = -1;     
-    
-    transition_map_[14][0] = 15; 
-    transition_map_[14][2] = 10; 
-    transition_map_[14][4] = 13; 
-    transition_map_[14][8] = -1; 
-
-    transition_map_[15][0] = -1; 
-    transition_map_[15][2] = 11;
-    transition_map_[15][4] = 15;
-    transition_map_[15][8] = -1;
-
-    */  
-  
 }
 
 //return is new state, with reward(its simple, 0 for all space except goal)

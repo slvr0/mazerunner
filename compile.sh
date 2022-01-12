@@ -1,3 +1,3 @@
 #! /bin/bash
 
-cd build; cmake ../; cmake --build ../; cd ..;./main
+cd build; cmake ../; cmake --build ../
