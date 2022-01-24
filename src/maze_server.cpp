@@ -24,7 +24,6 @@ bool MqttServer::Publish(const std::string msg)
 
 MqttServer::MqttServer(const std::string adress, const int & qos, const std::string topic) : 
      cli_(adress, ""), qos_(qos), topic_(topic)
-{	
-	//cout << "Initializing for server '" << adress << "'..." << endl;
+{
 	cli_.connect()->wait();
 }

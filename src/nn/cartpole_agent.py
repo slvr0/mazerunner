@@ -1,11 +1,16 @@
+import gym
 import numpy as np
 import torch as T
 from actor_critic import ActorCritic
 from icm import ICM
 from memory import Memory
 from utils import plot_learning_curve
-from p_mqtt_client import MqttProcess
+from p_mqtt_client import MqttClient, threaded_loop_forever, MqttProcess
 from custom_environments import MazeEnvironment
+# name, env_id, input_dims, output_dims,
+# global_actor_critic, global_icm, global_optim,
+# global_icm_opt, n_threads, icm
+from torch.multiprocessing import Process
 
 def agent( name, env_id, input_shape, n_actions, global_agent, global_icm,
            optimizer, icm_optimizer, n_threads, icm=False):
@@ -31,7 +36,7 @@ def agent( name, env_id, input_shape, n_actions, global_agent, global_icm,
     env = MazeEnvironment(mqtt_processclient)
     #env = gym.make(env_id)
 
-    t_steps, max_eps, episode, scores, avg_score = 0, 10000, 0, [], 0
+    t_steps, max_eps, episode, scores, avg_score = 0, 1000, 0, [], 0
 
     while episode < max_eps:
         obs = env.reset()
@@ -39,6 +44,7 @@ def agent( name, env_id, input_shape, n_actions, global_agent, global_icm,
         hx = T.zeros(1, 256)
         score, done, ep_steps = 0, False, 0
         while not done:
+
             state = T.tensor([obs[0]], dtype=T.float)
 
             action, value, log_prob, hx = local_agent(state, hx)
@@ -52,15 +58,12 @@ def agent( name, env_id, input_shape, n_actions, global_agent, global_icm,
             obs = obs_
 
             if ep_steps % T_MAX == 0 or done:
+                print("training...")
                 states, actions, rewards, new_states, values, log_probs = \
                         memory.sample_memory()
                 if icm:
-                    np_states = np.array(states)
-                    np_new_states = np.array(new_states)
-                    np_actions = np.array(actions)
-
                     intrinsic_reward, L_I, L_F = \
-                            local_icm.calc_loss(np_states, np_new_states, np_actions)
+                            local_icm.calc_loss(states, new_states, actions)
 
                 loss = local_agent.calc_loss(obs, hx, done, rewards, values,
                                              log_probs, intrinsic_reward)
@@ -89,7 +92,6 @@ def agent( name, env_id, input_shape, n_actions, global_agent, global_icm,
                     icm_optimizer.step()
                     local_icm.load_state_dict(global_icm.state_dict())
                 memory.clear_memory()
-                break #reset environment
 
         if name == '1':
             scores.append(score)

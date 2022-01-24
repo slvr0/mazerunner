@@ -6,12 +6,29 @@
 #include <memory>
 #include <vector>
 #include <functional>
-
-#include "maze_client_example.h"
+#include <map>
+#include "maze_client.h"
+#include "maze_server.h"
+#include <cassert>
 
 #include "maze_structure.h"
 
-//decides where to go next,
+
+inline std::vector<int> find_all_char_positions_in_string(std::string sample, char findIt)
+{
+    std::vector<int> characterLocations;
+    for(int i =0; i < sample.size(); i++)
+        if(sample[i] == findIt)
+            characterLocations.push_back(i);
+
+    return characterLocations;
+}
+
+//  for (auto const &pair: kvp) {
+//         std::cout << pair.first << " : " << pair.second << "\n";
+//         }
+
+
 class TaskLead
 {
 public : 
@@ -20,37 +37,29 @@ public :
     void Peak();
     int Step(const int action);
     int Step();
-    void React(const std::string decision)
-    {
-        std::cout << "React called! with msg " << decision << std::endl ;
-    } // binds a message on a mqtt topic that callbacks react so we can take decision on it.
 
-    void Reset();
+    //failry vague method name, the taskleader updates environment status with help from a message coming from the neural net in zmq message.
+    void React(const std::string msg, std::map<std::string , int> & response_map);
+
+    //returns startstate
+    int Reset();
     void Report();
 
     inline void SetEnvironmentInterface(MazeStructure* maze_structure) { maze_structure_ = maze_structure;}
-    inline void SetMqttClient(MqttClientTest& client) {
-        client_ = &client;
-
-        //std::function<void (std::string)> func_ptr = &this->React();
-
-        auto react_lambda = [&](const std::string msg) 
-        {
-            this->React(msg);
-        };
-
-        client_->SetCallbackMethod(react_lambda);
+    
+    
+    inline int GetState() const {
+        return current_state_;
     }
+
     
     private: 
     MazeStructure* maze_structure_ = nullptr;
     std::vector<int> markov_chain_;  
     int current_state_;    
-    MqttClientTest* client_;   
-   
+    MqttClient* client_;  
    
 };
-
 
 class MazeEnvironment
 {
@@ -59,9 +68,13 @@ public :
 
     int Step();
 
+    inline TaskLead* GetTaskLeader() const {
+        return task_leader_.get();
+    }
+    void run();
+    int Reset();
 
 private: 
     std::unique_ptr<TaskLead> task_leader_ = nullptr;
     std::unique_ptr<MazeStructure> maze_ = nullptr;  
-	
 };

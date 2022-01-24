@@ -109,12 +109,22 @@ void StateTransitionMapLevel1::FillTransitionMap()
 }
 
 //return is new state, with reward(its simple, 0 for all space except goal)
+
 std::pair<int, int> StateTransitionMap::GetTransition(const int & state, const int & action)
 {
     std::pair<int,int> state_action_pair;
 
     state_action_pair.first = transition_map_[state*4 + action];
-    state_action_pair.second = state_action_pair.first == 12 ? 0 : 1;
+
+    if(state_action_pair.first == -1)  //for now lets give it a negative reward for stepping to invalid squares and just keep the same state.
+    {
+        state_action_pair.first = state;
+        state_action_pair.second = -1;
+    }
+    else
+    {
+        state_action_pair.second = state_action_pair.first == 12 ? 1 : 0;
+    }
 
     return state_action_pair;
 }

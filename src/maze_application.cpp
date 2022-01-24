@@ -1,5 +1,8 @@
 #include "maze_application.h"
 
+
+//i guess this is intended to work as a interface to the environment
+
 MazeApplication::MazeApplication() : 
  environment_(std::make_unique<MazeEnvironment> (0))
 {
@@ -8,10 +11,10 @@ MazeApplication::MazeApplication() :
 
 void MazeApplication::run()
 {  
-    for(int i = 0 ; i < 100;++i)
+    while (std::tolower(std::cin.get()) != 'q')
     {
-        environment_->Step(); // seg faulting ! happy new year     
-    }
-  
 
+    }
+    
+    exit(0);
 }

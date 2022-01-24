@@ -149,44 +149,17 @@ protected :
 
 };
 
-class MqttClientTest
+class MqttClient
 {	
 public : 
+	MqttClient(std::string server_adress, std::string client_id, const std::string & topic); 
 
-	~MqttClientTest()
-	{
-		cli_.disconnect()->wait();
-	}
+	~MqttClient();
 
-	void SetCallbackMethod(std::function<void (std::string)> callback_method )
-	{
-		if(cb_)  
-			cb_->SetCallbackMethod(callback_method);	
-	}
+	void SetCallbackMethod(std::function<void (std::string)> callback_method );
 
-	MqttClientTest(std::string server_adress, std::string client_id, const std::string & topic) : 
-		cli_(server_adress, client_id)
+	bool Publish(const std::string & adress, const std::string msg);
 
-	{
-		connOpts_.set_clean_session(false);
-
-		cb_ = std::make_unique<callback>(cli_, connOpts_, topic);		
-		
-		cli_.set_callback(*cb_.get());
-
-		//connect the client	
-		try {
-			std::cout << "Connecting to the MQTT server..." << std::flush;
-			mqtt::token_ptr tokenptr;
-			tokenptr = cli_.connect(connOpts_, nullptr, *cb_.get());
-			tokenptr->wait();
-		}
-		catch (const mqtt::exception& exc) {
-			std::cerr << "\nERROR: Unable to connect to MQTT server: '"
-				<< SERVER_ADDRESS << "'" << exc << std::endl;
-			
-		}
-	}
 private:
 	mqtt::connect_options connOpts_;
 	mqtt::async_client cli_;

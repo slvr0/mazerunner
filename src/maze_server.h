@@ -10,7 +10,6 @@ const std::string DFLT_SERVER_ADDRESS { "tcp://localhost:1883" };
 
 const int QOS__ = 1;
 
-
 //very simple mqtt server sending messages to choosen topics.
 class MqttServer
 {
