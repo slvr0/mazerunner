@@ -14,6 +14,13 @@
 #include "maze_structure.h"
 
 
+
+enum class EnvironmentStatus
+{
+    Finished = 0,
+    Playing = 1
+};
+
 inline std::vector<int> find_all_char_positions_in_string(std::string sample, char findIt)
 {
     std::vector<int> characterLocations;
@@ -39,7 +46,7 @@ public :
     int Step();
 
     //failry vague method name, the taskleader updates environment status with help from a message coming from the neural net in zmq message.
-    void React(const std::string msg, std::map<std::string , int> & response_map);
+    void  React(const std::string msg, std::map<std::string, int> &map_response);
 
     //returns startstate
     int Reset();
@@ -47,17 +54,24 @@ public :
 
     inline void SetEnvironmentInterface(MazeStructure* maze_structure) { maze_structure_ = maze_structure;}
     
+    inline EnvironmentStatus GetStatus() const 
+    {
+        return status_;
+    }
     
     inline int GetState() const {
         return current_state_;
     }
 
+    void DisplaySessionHistory(bool log = false);
+
     
     private: 
     MazeStructure* maze_structure_ = nullptr;
     std::vector<int> markov_chain_;  
-    int current_state_;    
-    MqttClient* client_;  
+    int current_state_;  
+    EnvironmentStatus status_;
+    int current_step_;
    
 };
 

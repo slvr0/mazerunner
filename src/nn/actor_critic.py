@@ -22,6 +22,7 @@ class ActorCritic(nn.Module):
 
         x = F.relu(self.input(state))
         x = F.relu(self.dense(x))
+
         hx = self.gru(x, (hx))
 
         pi = self.pi(hx)
@@ -30,11 +31,17 @@ class ActorCritic(nn.Module):
         probs = T.softmax(pi, dim=1)
         dist = Categorical(probs)
         action = dist.sample()
+
         log_prob = dist.log_prob(action)
 
         return action.numpy()[0], v, log_prob, hx
 
     def calc_R(self, done, rewards, values):
+
+        # print(done)
+        # print(rewards)
+        # print(values)
+
         values = T.cat(values).squeeze()
         if len(values.size()) == 1:  # batch of states
             R = values[-1] * (1-int(done))
@@ -55,6 +62,8 @@ class ActorCritic(nn.Module):
         if r_i_t is not None:
             rewards += r_i_t.detach().numpy()
         returns = self.calc_R(done, rewards, values)
+
+
         next_v = T.zeros(1, 1) if done else self.forward(T.tensor(new_states,
                                          dtype=T.float), hx)[1]
 

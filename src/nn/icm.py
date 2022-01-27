@@ -53,4 +53,4 @@ class ICM(nn.Module):
             intrinsic_reward = self.alpha*((state_ - tensor_new_states).pow(2)).mean(dim=1)
             return intrinsic_reward, L_I, L_F
         except :
-            print(type(state) , len(state))
+            print(type(state) , state.shape, new_state.shape)

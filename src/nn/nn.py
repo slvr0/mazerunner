@@ -11,7 +11,7 @@ class NeuralNetHandler :
         self.local_ac = self.create_a3c(input_dims, output_dims)
 
         if use_icm :
-            self.local_icm = self.create_a3c(input_dims, output_dims)
+            self.local_icm = self.create_icm(input_dims, output_dims)
 
         self.memory = Memory()
         self.use_icm = use_icm
@@ -34,9 +34,12 @@ class NeuralNetHandler :
     def request_statemetrics(self, state, hx):
         return self.local_ac(state, hx)
 
-    def train_network(self, done, hx_metrics):
+    def train_network(self, last_state, done, hx_metrics):
         states, actions, rewards, new_states, values, log_probs = \
             self.memory.sample_memory()
+
+        #print("training on {} samples...".format(len(self.memory)))
+
         if self.use_icm:
             np_states = np.array(states)
             np_new_states = np.array(new_states)
@@ -45,7 +48,7 @@ class NeuralNetHandler :
             intrinsic_reward, L_I, L_F = \
                 self.local_icm.calc_loss(np_states, np_new_states, np_actions)
 
-        loss = self.local_ac.calc_loss(states, hx_metrics, done, rewards, values,
+        loss = self.local_ac.calc_loss(last_state, hx_metrics, done, rewards, values,
                                      log_probs, intrinsic_reward)
 
         self.global_optim.zero_grad()
@@ -71,6 +74,8 @@ class NeuralNetHandler :
                 global_param._grad = local_param.grad
             self.icm_global_optim.step()
             self.local_icm.load_state_dict(self.global_icm.state_dict())
+
         self.memory.clear_memory()
+        print("memory entries cleared : entries now {}".format(len(self.memory)))
 
         return hx

@@ -20,14 +20,10 @@ int TaskLead::Step(const int action)
 }
 //sets up connection between pythons comm telling c where it is and what action it chooses,  
 //subsequent response (new state/reward) is sent back to a respond topic.
-void TaskLead::React(const std::string msg, std::map<std::string , int> & response_map)
-{
-
-    
-
-
-    std::cout << "taskleader reacting to message " << msg << std::endl;
-    bool debug = true;
+ void TaskLead::React(const std::string msg, std::map<std::string, int> & map_response)
+{        
+    //std::cout << "taskleader reacting to message " << msg << std::endl;
+    bool debug = false;
 
     size_t start_curl = msg.find("{");
     size_t end_curl = msg.find("}");
@@ -37,7 +33,10 @@ void TaskLead::React(const std::string msg, std::map<std::string , int> & respon
 
     std::map<std::string, float> kvp;
 
-    if(seps.size() == 0) return ;
+    if(seps.size() == 0) {
+        std::cout << "special exit 1 in react method\n";
+        return ;
+    }
 
     //this should be its own algorithm, nothing to do with the taskleader 
     if(vseps.size() == 0)  //first element in a single item list
@@ -71,39 +70,46 @@ void TaskLead::React(const std::string msg, std::map<std::string , int> & respon
 
     std::string key_state = "state";
     std::string key_action = "action";
+    std::string key_trained = "trained";
 
-    if(!kvp.count(key_state) || !kvp.count(key_action)) return;
+    if(kvp.count(key_trained)) {
+       map_response["state"] = 3;
+       map_response["reward"] = 0;
+       map_response["train"] = 0;
+
+       this->Reset(); 
+       return;
+    }
+
+    if(!kvp.count(key_state) || !kvp.count(key_action)) {
+        std::cout << "special exit 2 in react method\n";
+        return ;
+    }
 
     //assert(kvp.count(key_state) && kvp.count(key_action) && "error , no key / action was passes as argument in message to task leader \n");
 
     int env_state = static_cast<int> (kvp[key_state]); 
-    int env_action = static_cast<int> (kvp[key_action]);
-
-   
+    int env_action = static_cast<int> (kvp[key_action]);   
 
     //this transition update should include done / info flags too.
     auto get_transition = maze_structure_->GetTransition(env_state ,env_action);  
-    std::cout << "moving from state : " << env_state << " with action " << env_action << "results in " << get_transition.first << std::endl;
 
-    // std::string publish_channel = "env_send";
-
-    // std::string response = "{" + std::string("state:") + std::to_string(new_state_reward.first) + ",reward:" + 
-    // std::to_string(new_state_reward.second) + "}";
+    if(debug)
+        std::cout << "moving from state : " << env_state << " with action " << env_action << "results in " << get_transition.first << std::endl;
     
-    // //client_->Publish(publish_channel, response);
-
-    // if(debug)
-    // {
-    //     std::cout << "State updated from : " << 
-    //     env_state << " to " << current_state_ << " with reward feedback : " << 
-    //     current_state_ << std::endl;
-    // }
-
     //update current state
     current_state_ = get_transition.first;
 
-    response_map["state"] = get_transition.first;
-    response_map["reward"] = get_transition.second;
+    //save it in the session history
+    markov_chain_.emplace_back(current_state_);
+
+    map_response["state"] = get_transition.first;
+    map_response["reward"] = get_transition.second;
+ 
+ 
+    if(get_transition.first == 12) 
+        status_ = EnvironmentStatus::Finished; 
+        //map_response["train"] = 1;
 
 } 
 
@@ -138,13 +144,35 @@ int TaskLead::Step()
 
 int TaskLead::Reset()
 {
+    status_ = EnvironmentStatus::Playing;
     markov_chain_.clear();
-    current_state_ = 3;    
+    current_state_ = 3;   
+    markov_chain_.emplace_back(current_state_); 
+    current_step_ = 0;
 }
 
-void Report()
-{
+void TaskLead::DisplaySessionHistory(bool log){
 
+    bool print_gamechain = false;
+    bool print_gameresultscore = true;
+
+    if(print_gamechain) { 
+        std::cout << "game history is :: \n";
+        for(const auto & element : markov_chain_) 
+        {
+            std::cout << " state : " << element;
+        } 
+        std::cout << std::endl;    
+    }
+    if(print_gameresultscore) {
+        const size_t n_steps = markov_chain_.size();
+        if(current_state_ == 12) {
+            std::cout << "score : " << (float)1.0 / n_steps << std::endl;
+        }
+        else {
+            std::cout << "score : " << 0 << " final state : " << current_state_ << std::endl;
+        }
+    }
 }
 
 MazeEnvironment::MazeEnvironment(const int & level) : 
@@ -157,6 +185,10 @@ maze_(std::make_unique<MazeStructure>(level))
 
     
 }
+
+
+
+
 
 
 //actually not really needed as of now, we start the chain comm right away in signal interface, awful design needs improv.

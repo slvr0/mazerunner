@@ -33,9 +33,10 @@ def test_comminterface():
     nn = NeuralNetHandler(input_shape, n_actions, global_optim = global_optim, global_icm_optim =global_icm_optim,
                           global_ac = global_actor_critic, global_icm = global_icm, use_icm=use_icm   )
 
+    reply_port = "5533"
     pull_port = "5511"
     push_port = "5557"
-    zmq_comm = ZmqCommInterface(pull_port=pull_port, push_port=push_port, nn=nn)
+    zmq_comm = ZmqCommInterface(adress=reply_port, nn=nn)
     zmq_comm.start()
     zmq_comm.join()
 

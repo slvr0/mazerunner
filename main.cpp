@@ -74,16 +74,24 @@ int main(int argc, char** argv)
 
 	std::string zmq_pull_msg_adress = "tcp://127.0.0.1:5511";
 	std::string zmq_push_msg_adress = "tcp://127.0.0.1:5557";
+	std::string zmq_request_adress = "tcp://127.0.0.1:5533";
 
 	int level = 0;
 	MazeEnvironment maze_env(level);
 
 	ZMQSender sigcomm_sender(zmq_pull_msg_adress);
 
-	SignalCommInterface sigcomm_interface(&sigcomm_sender, zmq_push_msg_adress, maze_env.GetTaskLeader());
+	SignalCommInterface sigcomm_interface(&sigcomm_sender, zmq_request_adress, maze_env.GetTaskLeader());
 
 	std::thread sender_thread = sigcomm_sender.RunThread();
 	std::thread sigcomm_thread = sigcomm_interface.RunThread();
+
+	while (std::tolower(std::cin.get()) != 'q')
+	{
+
+	}
+    
+    exit(0);
 
 	sender_thread.join();
 	sigcomm_thread.join();
