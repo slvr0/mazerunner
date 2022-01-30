@@ -34,6 +34,18 @@ public :
 
 };
 
+class StateTransitionMapLevel2 : public StateTransitionMap
+{
+public :
+
+    void FillTransitionMap() override;
+
+
+
+
+
+};
+
 class MazeStructure
 {
 public : 

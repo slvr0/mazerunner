@@ -42,11 +42,9 @@ public :
     TaskLead(MazeStructure* maze_structure = nullptr);
 
     void Peak();
-    int Step(const int action);
-    int Step();
 
     //failry vague method name, the taskleader updates environment status with help from a message coming from the neural net in zmq message.
-    void  React(const std::string msg, std::map<std::string, int> &map_response);
+    void  React(std::map<std::string, int> input_args, std::map<std::string, int> &map_response);
 
     //returns startstate
     int Reset();

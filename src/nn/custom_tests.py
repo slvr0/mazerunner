@@ -7,38 +7,33 @@ import torch as T
 import numpy as np
 import zmq
 import time
+from network import build_kerasmodel
 
 from actor_critic import ActorCritic
 from icm import ICM
 from shared_adam_opt import AdamOpt
+
+def test_kerasnet() :
+
+    inpd = 1
+    outpd = 4
+
+    model = build_kerasmodel(inpd, outpd)
+
+    mock_input = np.array([1])
+
+    out = model.predict(mock_input)
+
 def test_comminterface():
-    n_actions = 4
-    input_shape = [1]
 
-    use_icm = True
-
-    global_actor_critic = ActorCritic(input_shape, n_actions)
-    global_actor_critic.share_memory()
-    global_optim = AdamOpt(global_actor_critic.parameters())
-
-    if not use_icm:
-        global_icm = None
-        global_icm_optim = None
-    else:
-        global_icm = ICM(input_shape, n_actions)
-        global_icm.share_memory()
-        global_icm_optim = AdamOpt(global_icm.parameters())
-
-
-    nn = NeuralNetHandler(input_shape, n_actions, global_optim = global_optim, global_icm_optim =global_icm_optim,
-                          global_ac = global_actor_critic, global_icm = global_icm, use_icm=use_icm   )
 
     reply_port = "5533"
     pull_port = "5511"
     push_port = "5557"
-    zmq_comm = ZmqCommInterface(adress=reply_port, nn=nn)
-    zmq_comm.start()
-    zmq_comm.join()
+    zmq_comm = ZmqCommInterface(adress=reply_port)
+    zmq_comm.run()
+    # zmq_comm.start()
+    # zmq_comm.join()
 
 def test_test_icm():
     input_dims = [1]

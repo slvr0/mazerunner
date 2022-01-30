@@ -5,6 +5,7 @@
 #include <memory>
 #include <string>
 #include <mutex>
+#include <numeric>
 
 #include "environment.h"
 
@@ -26,6 +27,7 @@ struct DecodedMessage
 
 class ZMQSender 
 {
+    
     public : 
     ZMQSender(const std::string adress) : adress_(adress), sender(ctx, zmq::socket_type::push)  {  
         //sender.setsockopt(ZMQ_SNDHWM, 0, 0);
@@ -97,7 +99,7 @@ class SignalCommInterface
         {
             
             int max_iterations = 30;
-
+            
             zmq::message_t reply;
 
             bool is_msg_sent = true;
@@ -116,23 +118,40 @@ class SignalCommInterface
             {"step" , 0}
             };
 
-            std:: string response_msg = MapToJSON(map_response).c_str(); 
+            std::map<std::string, int> map_request {
+                {"state" , 3}, 
+                {"action" , 0}, 
+            };
 
+
+            std::string key_trained = "trained";
+
+            int n_sessions = 0;
+            int n_successful_runs = 0;
+
+            std::vector<int> scores;
+            for(int i = 0 ; i < 100 ; ++i ) scores.emplace_back(0);
+     
+            
             while(true) {
-                int iteration = -1;
+                ++n_sessions;
+                int iteration = -1;   
+
+                std:: string response_msg = MapToJSON(map_response).c_str();           
                 
+                bool send_train_req_onbreak = true;
 
                 while(iteration++ < max_iterations) { 
                     map_response["step"] = iteration;
-                    this->send(rec, response_msg.c_str());
+                    this->send(rec, response_msg.c_str());                    
                     
-                    rec.recv (&reply);                     
-                    
-                    PrintMap(map_response);
-                    
+                    rec.recv (&reply); 
+
                     std::string rpl = std::string(static_cast<char*>(reply.data()), reply.size());                
 
-                    DecodedMessage decoded_msg = GetDecodedMessage(rpl);
+                    auto msg_kvp = GetDecodedMessage(rpl);   
+
+                    
 
                     //there could be a received signal that the network has trained. then we should simply update and reset environment 
                     //and send starting metrics. can be done in react aswell!
@@ -140,41 +159,46 @@ class SignalCommInterface
                     //the signal interface should not logically tell the task leader to send a response message.
                     //the design should be, message comes in, message is passed to task leader,
                     //task leader tells the signal interface to forward a response
-                    if(task_leader_) { 
+                    if(task_leader_) {
+                        //if message is , have trained, simply set response to start state and break (without training again ofc)
+                        
+                        if(msg_kvp.count(key_trained)) {   
+                            map_response["state"] = 3;
+                            map_response["reward"] = 0;
+                            map_response["train"] = 0;
 
+                            task_leader_->Reset();
+                            send_train_req_onbreak = false;  
 
-                        task_leader_->React(decoded_msg.decoded_message_, map_response);  
-
-                        //response_msg = "{state:3,reward:1}";
+                            //task_leader_->DisplaySessionHistory();
+                                                    
+                            break;                                         
+                        }
+                        
+                        task_leader_->React(msg_kvp, map_response);  
                         response_msg = MapToJSON(map_response).c_str(); 
 
                         if(task_leader_->GetStatus() == EnvironmentStatus::Finished) {  
-                            std::cout << "we finished the maze! \n";                        
+                            n_successful_runs++;                            
+                            scores[n_sessions % 100] = 1;                            
                             break;
                         }                       
-                    }
-                    
+                    }                    
                 }
 
-                map_response["train"] = 1;
+                if(task_leader_->GetStatus() != EnvironmentStatus::Finished){
+                    scores[n_sessions % 100] = 0;                    
+                }
 
+                if(send_train_req_onbreak) 
+                    map_response["train"] = 1;
                 
-            
-            
-            //important, final state and reward is sent to nn before concluding session
-            //task_leader_->DisplaySessionHistory();
-
-            //taskleader doesnt reset environment here, he awaits for confirmation that nn have trained , then resets in react method.
-            //task_leader_->Reset(); 
-
-            // auto state = map_response["state"];
-            // auto reward = map_response["reward"];    
-
-            // std:: cout << state << std::endl;            
-
-            // response_msg = "{state:" + std::to_string(state) + "," + "reward:" + std::to_string(reward) + ",train:1}";
-            
                 
+               //std::cout << "sessions  : " << n_sessions << " -- success : " << n_successful_runs << std::endl;
+               auto sumscores = std::accumulate(scores.begin(), scores.end(), 0);
+               //std::cout << "score : " << (float)n_successful_runs /  n_sessions << std::endl;
+               std::cout <<  "AVG score : "  << (float)sumscores/100.0  << std::endl;                           
+               
             }  
             rec.close();
         }
@@ -190,9 +214,9 @@ class SignalCommInterface
             bool rc = socket.send (message);
             return (rc);
         }
-
-        DecodedMessage GetDecodedMessage(const std::string message); 
-        DecodedMessage GetDecodedMessage(zmq::message_t message);    
+        
+        std::map<std::string, int> GetDecodedMessage(const std::string msg);       
+  
 
         template <typename A>
         inline std::string MapToJSON(std::map<std::string, A> dict_)

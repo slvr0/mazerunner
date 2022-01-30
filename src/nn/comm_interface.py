@@ -9,9 +9,15 @@ from memory import Memory
 from nn import NeuralNetHandler
 import torch as T
 import numpy as np
-
+from actor_critic import ActorCritic
+from icm import ICM
+from shared_adam_opt import AdamOpt
 #this is garbage ,rework, only one channel for rec and one for send!
 #then in future, we can have separate channel for simple state evaluation request! first make main loop work
+
+from network import build_kerasmodel
+
+import tensorflow as tf
 
 topic_receive = "env_send"
 topic_send = "nn_send"
@@ -47,93 +53,98 @@ class CommResponse(Enum):
     Train = 4
 
 #bind request topicfilters on global config later.
-class ZmqCommInterface(threading.Thread) :
-    def __init__(self, adress, session_params = None, nn = None, reporter = None):
-        super(ZmqCommInterface, self).__init__()
+class ZmqCommInterface :
+    def __init__(self, adress, session_params = None, reporter = None):
+        #super(ZmqCommInterface, self).__init__()
         self.context = zmq.Context()
 
         self.receiver = self.context.socket(zmq.REP)
         self.receiver.bind("tcp://127.0.0.1:{}".format(adress))
 
-        #self.transmitter = self.context.socket(zmq.PUSH)
-
-        #self.transmitter.connect("tcp://127.0.0.1:{}".format(push_port))
-
         print("[x] python zmq communication interface started")
         #print("interface receiving message from port : {} and sending on port {}".format(pull_port, push_port) )
         print("reply interface receiving message from port : {}".format(adress))
 
-        self.nn = nn
+        n_actions = 4
+        input_shape = 1
+
+        self.model = build_kerasmodel(input_shape, n_actions)
+
+        self.model._make_predict_function()
+
+        self.nn = NeuralNetHandler(self.model, input_shape, n_actions)
+
         self.session_params = session_params
         self.reporter = reporter
 
+
     def run(self) -> None:
+
         if self.session_params :
             training_sessions = self.session_params['n_training_sessions']
         else :
-            training_sessions = 4000
+            training_sessions = 40000
 
         iter = 0
+
         for i in range(training_sessions) :
-            hx = T.zeros(1, 256)
 
             state = None
             action = None
             done = False
             step = -1
+            scores = [0] * 100
 
+            #for i in range(n_sessions):
+
+                #scores[i % 100] = session_score
+
+            session_score = 0
             while True :
                 message = self.receiver.recv()
                 str = decode_response(message) #decodes the actual values in message
 
-                new_state = [int(str['state'])]
+                new_state = np.array([int(str['state'])])
                 reward = int(str['reward'])
                 do_train = int(str['train'])
 
                 step += 1
+                session_score += reward
 
                 if step == 0: #initiate process
                     state = new_state
-                    # convert to tensor
-                    state_tensor = T.tensor(np.array([state]), dtype=T.float)
-                    action, value, log_prob, hx = self.nn.request_statemetrics(state_tensor, hx)
+                    action = self.nn.request_stateresponse(state)
                     self.que_c_statechange_response(state, action)
-
                 else :
-                    # convert to tensor
-
-                    state_tensor = T.tensor(np.array([new_state]), dtype=T.float)
-                    new_action, value, log_prob, hx = self.nn.request_statemetrics(state_tensor, hx)
-
-                    # fix sending done messages. store data
-                    self.nn.memory.remember(state, action, reward, new_state, value, log_prob)
+                    new_action = self.nn.request_stateresponse(state)
+                    done = True if reward == 1 else False
+                    self.nn.store_statetransition(state, action, reward, new_state, done)
 
                     state = new_state
-                    action = new_action  # save, for next iteration of batch memory
-                    # send response
-                    done = True if reward == 1 else False  # this should be set by a key element in message from c...
+                    action = new_action
 
                     if do_train == 1:
-                        print("session ended! training net and then resetting...")
+                        #print(state, action, reward, new_state, done)
+                        self.nn.train_network(new_state, done)
                         iter += 1
-                        state_tensor = T.tensor(np.array([state]), dtype=T.float)
-                        self.nn.train_network(state_tensor, done, hx)
-
-                        hx = hx.detach()
                         self.send_training_complete()
                         break
                     else :
                         self.que_c_statechange_response(state, action)
 
+            scores[i % 100] = session_score
+            print(" score : {}".format(session_score), "Average score : ", int(np.mean(scores, axis=0)),
+                  "eps : {}".format(self.nn.agent.eps))
+
         if iter >= training_sessions :
             print("finished training session python, shutting down comm thread \n")
 
+
         self.receiver.close()
-        self.transmitter.close()
 
     def send_training_complete(self):
         _str_msg = "{trained:" + str(1) + "}"
-        print(_str_msg)
+
         self.receiver.send_string(_str_msg)
 
     def que_c_statechange_response(self, state, action):

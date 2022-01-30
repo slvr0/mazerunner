@@ -17,6 +17,13 @@ class Memory :
         # print(type(value))
         # print(type(log_p))
 
+        # print("state", state)
+        # print("action", action)
+        # print("reward", reward)
+        # print("new_state", new_state)
+        # print("value", value)
+        # print("log_p", log_p)
+
         self.states.append(np.array(state))
         self.actions.append(np.array(action))
         self.rewards.append(reward)

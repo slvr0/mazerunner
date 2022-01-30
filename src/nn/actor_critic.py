@@ -18,6 +18,9 @@ class ActorCritic(nn.Module):
         self.pi = nn.Linear(256, n_actions)
         self.v = nn.Linear(256, 1)
 
+        device = T.device('cpu')
+        self.to(device)
+
     def forward(self, state, hx):
 
         x = F.relu(self.input(state))
@@ -37,11 +40,6 @@ class ActorCritic(nn.Module):
         return action.numpy()[0], v, log_prob, hx
 
     def calc_R(self, done, rewards, values):
-
-        # print(done)
-        # print(rewards)
-        # print(values)
-
         values = T.cat(values).squeeze()
         if len(values.size()) == 1:  # batch of states
             R = values[-1] * (1-int(done))
@@ -57,15 +55,14 @@ class ActorCritic(nn.Module):
                                 dtype=T.float).reshape(values.size())
         return batch_return
 
-    def calc_loss(self, new_states, hx, done,
+    def calc_loss(self, last_state, hx, done,
                   rewards, values, log_probs, r_i_t=None):
         if r_i_t is not None:
             rewards += r_i_t.detach().numpy()
         returns = self.calc_R(done, rewards, values)
 
-
-        next_v = T.zeros(1, 1) if done else self.forward(T.tensor(new_states,
-                                         dtype=T.float), hx)[1]
+        next_v = T.zeros(1, 1) if done else self.forward(T.tensor([last_state],
+                                         dtype=T.float) , hx)[1]
 
         values.append(next_v.detach())
         values = T.cat(values).squeeze()
