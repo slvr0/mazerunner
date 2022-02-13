@@ -1,23 +1,10 @@
 import zmq
-import time
-import sys
-
 from enum import Enum
-
-import threading
-from memory import Memory
 from nn import NeuralNetHandler
-import torch as T
 import numpy as np
-from actor_critic import ActorCritic
-from icm import ICM
-from shared_adam_opt import AdamOpt
+
 #this is garbage ,rework, only one channel for rec and one for send!
 #then in future, we can have separate channel for simple state evaluation request! first make main loop work
-
-from network import build_kerasmodel
-
-import tensorflow as tf
 
 topic_receive = "env_send"
 topic_send = "nn_send"
@@ -33,7 +20,15 @@ def decode_response(msg) :
     each_kv_p = ex.split(',')
     for kvp in each_kv_p :
         kv_split = kvp.split(':')
-        response_keypairs[kv_split[0]] = kv_split[1]
+
+        if '[' in kv_split[1] :
+            arr_split = kv_split[1][1 : -1].split('/')
+            response_keypairs[kv_split[0]] = [int(mv) for mv in arr_split]
+
+
+        else :
+            response_keypairs[kv_split[0]] = kv_split[1]
+
 
     return response_keypairs
 
@@ -68,15 +63,10 @@ class ZmqCommInterface :
         n_actions = 4
         input_shape = 1
 
-        self.model = build_kerasmodel(input_shape, n_actions)
-
-        self.model._make_predict_function()
-
-        self.nn = NeuralNetHandler(self.model, input_shape, n_actions)
+        self.nn = NeuralNetHandler(input_shape, n_actions)
 
         self.session_params = session_params
         self.reporter = reporter
-
 
     def run(self) -> None:
 
@@ -104,27 +94,35 @@ class ZmqCommInterface :
                 message = self.receiver.recv()
                 str = decode_response(message) #decodes the actual values in message
 
-                new_state = np.array([int(str['state'])])
-                reward = int(str['reward'])
-                do_train = int(str['train'])
+                new_state = int(float(str['state']))
+                reward = float(str['reward'])
+                do_train = int(float(str['train']))
+
+                if 'mask' in str.keys() :
+                    _mask = str['mask']
+                    _mask = [int(float(v)) for v in _mask]
+                else :
+                    _mask = None
+
 
                 step += 1
                 session_score += reward
 
                 if step == 0: #initiate process
                     state = new_state
-                    action = self.nn.request_stateresponse(state)
+                    action = self.nn.request_stateresponse(state, _mask)
                     self.que_c_statechange_response(state, action)
                 else :
-                    new_action = self.nn.request_stateresponse(state)
+                    new_action = self.nn.request_stateresponse(state, _mask)
                     done = True if reward == 1 else False
+
                     self.nn.store_statetransition(state, action, reward, new_state, done)
 
                     state = new_state
                     action = new_action
 
                     if do_train == 1:
-                        #print(state, action, reward, new_state, done)
+
                         self.nn.train_network(new_state, done)
                         iter += 1
                         self.send_training_complete()
@@ -133,11 +131,10 @@ class ZmqCommInterface :
                         self.que_c_statechange_response(state, action)
 
             scores[i % 100] = session_score
-            print(" score : {}".format(session_score), "Average score : ", int(np.mean(scores, axis=0)),
-                  "eps : {}".format(self.nn.agent.eps))
+            #print(" score : {:1f}".format(session_score), "Average score : ", int(np.mean(scores, axis=0)))
 
-        if iter >= training_sessions :
-            print("finished training session python, shutting down comm thread \n")
+        #if iter >= training_sessions :
+            #print("finished training session python, shutting down comm thread \n")
 
 
         self.receiver.close()
@@ -148,7 +145,10 @@ class ZmqCommInterface :
         self.receiver.send_string(_str_msg)
 
     def que_c_statechange_response(self, state, action):
-        _str_msg = "{state:"+str(*state) + "," + "action" + ":" + str(action) + "}"
+        try :
+            _str_msg = "{state:"+str(*state) + "," + "action" + ":" + str(action) + "}"
+        except :
+            _str_msg = "{state:" + str(state) + "," + "action" + ":" + str(action) + "}"
 
         self.receiver.send_string(_str_msg)
 

@@ -13,7 +13,16 @@
 
 #include "maze_structure.h"
 
+class StateTransitionInfo 
+{
+    public:
 
+    int state = 3;
+    float reward = 0;
+    int train = 0 ;
+    int step = 0;
+    std::vector<int> mask_transitions;
+}; 
 
 enum class EnvironmentStatus
 {
@@ -43,12 +52,25 @@ public :
 
     void Peak();
 
-    //failry vague method name, the taskleader updates environment status with help from a message coming from the neural net in zmq message.
-    void  React(std::map<std::string, int> input_args, std::map<std::string, int> &map_response);
+    // fairly vague method name (always be ambigious in programming), 
+    // the taskleader updates environment status with help from a message coming from the neural net in zmq message.
+    void  React(std::map<std::string, int> input_args,  bool mask_legal = true);
 
     //returns startstate
     int Reset();
     void Report();
+
+    inline StateTransitionInfo GetStateTransitionInfo() const {
+        return transition_;
+    }
+
+    constexpr int GetEnvironmentDimensions () const {
+        return maze_structure_->GetOutputDimension();
+    }
+    
+    inline std::vector<int> RequestLegalTransitions(const int & state){
+        return maze_structure_->GetLegalTransitions(state);
+    }
 
     inline void SetEnvironmentInterface(MazeStructure* maze_structure) { maze_structure_ = maze_structure;}
     
@@ -56,13 +78,17 @@ public :
     {
         return status_;
     }
+
+    void OrderTrainSession()
+    {
+        transition_.train = 1;
+    }
     
     inline int GetState() const {
         return current_state_;
     }
 
     void DisplaySessionHistory(bool log = false);
-
     
     private: 
     MazeStructure* maze_structure_ = nullptr;
@@ -70,6 +96,8 @@ public :
     int current_state_;  
     EnvironmentStatus status_;
     int current_step_;
+
+    StateTransitionInfo transition_;
    
 };
 

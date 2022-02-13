@@ -10,15 +10,15 @@ class StateTransitionMap
     
 public :
 
-//returns possible transitions from each state
+    //returns possible transitions from each state
 
-std::pair<int,int> GetTransition(const int & state, const int & action);
-  
+    std::pair<int,float> GetTransition(const int & state, const int & action);
+    
+    virtual void FillTransitionMap() = 0;
+    virtual std::vector<int> GetLegalTransitions(const int & state) const = 0;
 
-virtual void FillTransitionMap() = 0;
-
-protected : 
-int transition_map_[16*4]; //what if we want to keep this dynamic size?
+    protected : 
+    int transition_map_[16*4]; //what if we want to keep this dynamic size?
 
 };
 
@@ -28,9 +28,7 @@ public :
 
     void FillTransitionMap() override;
 
-
-
-
+    std::vector<int> GetLegalTransitions(const int & state) const;
 
 };
 
@@ -40,9 +38,8 @@ public :
 
     void FillTransitionMap() override;
 
-
-
-
+    std::vector<int> GetLegalTransitions(const int & state) const;
+  
 
 };
 
@@ -52,9 +49,16 @@ public :
     MazeStructure(const int & level);
 
     int GetTiles() const ;
+    constexpr int GetOutputDimension() const  {
+        return 4;
+    }
+
+    inline std::vector<int> GetLegalTransitions(const int & state) const{
+        return state_transition_map_->GetLegalTransitions(state);
+    }
 
     //returns possible transitions from each state
-    std::pair<int,int> GetTransition(const int & state, const int & action);
+    std::pair<int,float> GetTransition(const int & state, const int & action);
 
 private:
     

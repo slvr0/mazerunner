@@ -40,7 +40,6 @@ std::map<std::string, int> SignalCommInterface::GetDecodedMessage(const std::str
             std::vector<int> vseps = find_all_char_positions_in_string(msg, ',');
             std::vector<int> seps = find_all_char_positions_in_string(msg, ':');    
 
-          
 
             if(seps.size() == 0) {
             std::cout << "special exit 1 in react method\n";

@@ -1,30 +1,57 @@
-from actor_critic import ActorCritic
-from icm import ICM
-import torch as T
-import torch.nn.functional as F
-import numpy as np
-from memory import Memory
-from agent import DQN_KerasAgent
+from ppo_agent import PPO_AGENT
 
 class NeuralNetHandler :
-    def __init__(self, model, input_dims, output_dims):
+    def __init__(self, input_dims, output_dims):
 
-        batch_size = 50
-        self.agent = DQN_KerasAgent(model, batch_size, input_dims, output_dims)
+        gamma_param = .99
+        lamda_param = .95
+
+        self.agent = PPO_AGENT(input_dims, output_dims, gamma_param=gamma_param, lambda_param=lamda_param)
+
         self.training_epochs = 0
 
-    def create_a3c(self, input_dims, output_dims):
-        return ActorCritic(input_dims, output_dims)
-
-    def create_icm(self, input_dims, output_dims):
-        return ICM(input_dims, output_dims)
-
+        self.states = []
+        self.actions = []
+        self.rewards = []
+        self.next_states = []
+        self.terminals = []
+        self.prob_sum = 0
     def store_statetransition(self, obs, action, reward, obs_, done):
-        self.agent.memorize(obs, action, reward, obs_, done)
+        self.states.append(obs)
+        self.actions.append(action)
+        self.rewards.append(reward)
+        self.next_states.append(obs_)
+        self.terminals.append(done)
 
-    def request_stateresponse(self, state):
-        return self.agent.react(state)
+    def clear_memory(self):
+        self.states = []
+        self.actions = []
+        self.rewards = []
+        self.next_states = []
+        self.terminals = []
+
+    def request_stateresponse(self, state, _mask = None):
+
+        action,  self.prob_sum = self.agent.react(state, _mask)
+        return action
 
     def train_network(self, last_state, done):
-        self.agent.train()
+        #self.next_states.append(last_state)
+        #self.terminals.append(done)
+
+        # if done :
+        #     print(self.states)
+        #     print(self.actions)
+        #     print(self.next_states)
+        #     print(self.rewards)
+        #     print(self.terminals)
+
+
+        #if done : #change this to mean value of rewards > 0
+
+        self.training_epochs +=1
+
+        self.agent.learn(self.states, self.actions, self.next_states, self.rewards, self.terminals)
+
+        self.clear_memory()
 

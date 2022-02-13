@@ -11,14 +11,13 @@ TaskLead::TaskLead(MazeStructure* maze_structure) :
 
 void TaskLead::Peak()
 {
-    //whatever, dont need now
+    //whatever, dont need now, might need in the future
 }
-
 
 //sets up connection between pythons comm telling c where it is and what action it chooses,  
 //subsequent response (new state/reward) is sent back to a respond topic.
- void TaskLead::React(std::map<std::string, int> input_args, std::map<std::string, int> & map_response)
-{      
+ void TaskLead::React(std::map<std::string, int> input_args,  bool mask_legal)
+{       
     //std::cout << "taskleader reacting to message " << msg << std::endl;
     bool debug = false;
     
@@ -48,9 +47,15 @@ void TaskLead::Peak()
     //save it in the session history
     markov_chain_.emplace_back(current_state_);
 
+    transition_.state = get_transition.first;
+    transition_.reward = get_transition.second;
+    transition_.step += 1;
+         
+    if(mask_legal) {  
+        transition_.mask_transitions = maze_structure_->GetLegalTransitions(transition_.state);
 
-    map_response["state"] = get_transition.first;
-    map_response["reward"] = get_transition.second;
+    }
+        
     
     
     if(get_transition.first == 12) 
@@ -65,6 +70,14 @@ int TaskLead::Reset()
     current_state_ = 3;   
     markov_chain_.emplace_back(current_state_); 
     current_step_ = 0;
+
+
+    //set state transition info 
+    transition_.state = 3;
+    transition_.reward = 0;
+    transition_.step = 0;
+    transition_.train = 0;
+    transition_.mask_transitions = this->RequestLegalTransitions(transition_.state);
 }
 
 void TaskLead::DisplaySessionHistory(bool log){
@@ -93,19 +106,9 @@ void TaskLead::DisplaySessionHistory(bool log){
 
 MazeEnvironment::MazeEnvironment(const int & level) : 
 maze_(std::make_unique<MazeStructure>(level))
-
-
 {
-
-    task_leader_ = std::make_unique<TaskLead> (maze_.get());
-
-    
+    task_leader_ = std::make_unique<TaskLead> (maze_.get());    
 }
-
-
-
-
-
 
 //actually not really needed as of now, we start the chain comm right away in signal interface, awful design needs improv.
 void MazeEnvironment::run()

@@ -1,17 +1,9 @@
-from icm_test import ICMTest
 from comm_interface import ZmqCommInterface
-from nn import NeuralNetHandler
 
-from icm import ICM
-import torch as T
 import numpy as np
 import zmq
 import time
 from network import build_kerasmodel
-
-from actor_critic import ActorCritic
-from icm import ICM
-from shared_adam_opt import AdamOpt
 
 def test_kerasnet() :
 
@@ -43,8 +35,6 @@ def test_test_icm():
     mock_state = np.array([2,3,4])
     mock_state_t = T.tensor(mock_state, dtype=T.float).unsqueeze(dim=-1)
     print(mock_state_t.size())
-
-
     result = icm_test(mock_state_t)
 
 def test_icm() :
@@ -91,4 +81,8 @@ def test_zmq():
 
         #  Send reply back to client
         socket.send(b"World")
+
+from keras.layers import concatenate, Lambda
+from keras import Sequential, Input, Model
+import keras.backend as K
 

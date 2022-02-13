@@ -20,6 +20,31 @@ level_(level),  state_transition_map_(std::make_unique<StateTransitionMapLevel2>
      return n_tiles_;
  }
 
+std::vector<int> StateTransitionMapLevel1::GetLegalTransitions(const int & state) const
+{   
+    std::vector<int> action_mask;
+       //go through the returns and see which gives a non negative one response
+    if (transition_map_[state * 4 ] != -1) action_mask.emplace_back(0);
+    if (transition_map_[state* 4 + 1] != -1) action_mask.emplace_back(1);
+    if (transition_map_[state* 4 + 2] != -1) action_mask.emplace_back(2);
+    if (transition_map_[state* 4 + 3] != -1) action_mask.emplace_back(3); 
+    
+    return action_mask; 
+}
+
+
+std::vector<int> StateTransitionMapLevel2::GetLegalTransitions(const int & state) const
+{
+    std::vector<int> action_mask;
+       //go through the returns and see which gives a non negative one response
+    if (transition_map_[state * 4 ] != -1) action_mask.emplace_back(0);
+    if (transition_map_[state* 4 + 1] != -1) action_mask.emplace_back(1);
+    if (transition_map_[state* 4 + 2] != -1) action_mask.emplace_back(2);
+    if (transition_map_[state* 4 + 3] != -1) action_mask.emplace_back(3); 
+
+    return action_mask; 
+}
+
 void StateTransitionMapLevel1::FillTransitionMap() 
 {
     //** Explain? **/
@@ -93,20 +118,20 @@ void StateTransitionMapLevel1::FillTransitionMap()
     transition_map_[50] = -1; 
     transition_map_[51] = -1; 
    
-    transition_map_[48+4] = 14;
-    transition_map_[49+4] = 9; 
-    transition_map_[50+4] = -1; 
-    transition_map_[51+4] = -1;     
+    transition_map_[52] = 14;
+    transition_map_[53] = 9; 
+    transition_map_[54] = -1; 
+    transition_map_[55] = -1;     
     
-    transition_map_[52+4] = 15; 
-    transition_map_[53+4] = 10; 
-    transition_map_[54+4] = 13; 
-    transition_map_[55+4] = -1; 
+    transition_map_[56] = 15; 
+    transition_map_[57] = 10; 
+    transition_map_[58] = 13; 
+    transition_map_[59] = -1; 
 
-    transition_map_[56+4] = -1; 
-    transition_map_[57+4] = 11;
-    transition_map_[58+4] = 15;
-    transition_map_[59+4] = -1; 
+    transition_map_[60] = -1; 
+    transition_map_[61] = 11;
+    transition_map_[62] = 14;
+    transition_map_[63] = -1; 
     
 }
 
@@ -195,34 +220,35 @@ void StateTransitionMapLevel2::FillTransitionMap()
 
     transition_map_[60] = -1; 
     transition_map_[61] = 11;
-    transition_map_[62] = 15;
-    transition_map_[63] = -1; 
-    
+    transition_map_[62] = 14;
+    transition_map_[63] = -1;     
 }
 
 //return is new state, with reward(its simple, 0 for all space except goal)
 
-std::pair<int, int> StateTransitionMap::GetTransition(const int & state, const int & action)
+std::pair<int, float> StateTransitionMap::GetTransition(const int & state, const int & action)
 {
-    std::pair<int,int> state_action_pair;
+    std::pair<int,float> state_action_pair;
 
-    state_action_pair.first = transition_map_[state*4 + action];
+    state_action_pair.first = transition_map_[state * 4 + action];
 
     if(state_action_pair.first == -1)  //for now lets give it a negative reward for stepping to invalid squares and just keep the same state.
     {
         state_action_pair.first = state;
-        state_action_pair.second = 0;
+        state_action_pair.second = 0.0f;
     }
     else
     {
-        state_action_pair.second = state_action_pair.first == 12 ? 1 : 0;
+        state_action_pair.second = state_action_pair.first == 12 ? 1.0 : 0.0f;
     }
 
     return state_action_pair;
 }
 
 
-std::pair<int,int> MazeStructure::GetTransition(const int & state, const int & action)
+
+
+std::pair<int,float> MazeStructure::GetTransition(const int & state, const int & action)
 {
     if(state >= n_tiles_) throw std::invalid_argument( "State does not exist in Maze... \n" );
     
