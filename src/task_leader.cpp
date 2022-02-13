@@ -1,24 +1,13 @@
-#include "environment.h"
-#include <iostream>
-#include <cmath>
+#include "task_leader.h"
 
-
-TaskLead::TaskLead(MazeStructure* maze_structure) : 
-    maze_structure_(maze_structure), current_state_(3)
+TaskLeader::TaskLeader(CustomEnvironment* env) : 
+    env_(env), current_state_(3)
 {
     srand((unsigned) time(0));
 }
 
-void TaskLead::Peak()
-{
-    //whatever, dont need now, might need in the future
-}
-
-//sets up connection between pythons comm telling c where it is and what action it chooses,  
-//subsequent response (new state/reward) is sent back to a respond topic.
- void TaskLead::React(std::map<std::string, int> input_args,  bool mask_legal)
-{       
-    //std::cout << "taskleader reacting to message " << msg << std::endl;
+void TaskLeader::React(std::map<std::string, float> input_args,  bool mask_legal)
+{  
     bool debug = false;
     
     std::string key_state = "state";
@@ -26,7 +15,6 @@ void TaskLead::Peak()
     std::string key_trained = "trained";
 
     //this should be independly logic on environment, override this with virtual method later
-
     if(!input_args.count(key_state) || !input_args.count(key_action)) {
         std::cout << "special exit 2 in react method\n";
         return ;
@@ -36,7 +24,7 @@ void TaskLead::Peak()
     int env_action = static_cast<int> (input_args[key_action]);   
 
     //this transition update should include done / info flags too.
-    auto get_transition = maze_structure_->GetTransition(env_state ,env_action);  
+    auto get_transition = env_->GetTransition(transition_ , env_action);  
 
     if(debug)
         std::cout << "moving from state : " << env_state << " with action " << env_action << "results in " << get_transition.first << std::endl;
@@ -52,18 +40,16 @@ void TaskLead::Peak()
     transition_.step += 1;
          
     if(mask_legal) {  
-        transition_.mask_transitions = maze_structure_->GetLegalTransitions(transition_.state);
+        transition_.mask_transitions = env_->GetLegalTransitions(transition_);
 
-    }
+    }       
         
-    
-    
     if(get_transition.first == 12) 
-        status_ = EnvironmentStatus::Finished;       
+        status_ = EnvironmentStatus::Finished;      
 
 } 
 
-int TaskLead::Reset()
+int TaskLeader::Reset()
 {
     status_ = EnvironmentStatus::Playing;
     markov_chain_.clear();
@@ -71,16 +57,15 @@ int TaskLead::Reset()
     markov_chain_.emplace_back(current_state_); 
     current_step_ = 0;
 
-
     //set state transition info 
     transition_.state = 3;
     transition_.reward = 0;
     transition_.step = 0;
     transition_.train = 0;
-    transition_.mask_transitions = this->RequestLegalTransitions(transition_.state);
+    transition_.mask_transitions = this->RequestLegalTransitions(transition_);
 }
 
-void TaskLead::DisplaySessionHistory(bool log){
+void TaskLeader::DisplaySessionHistory(bool log){
 
     bool print_gamechain = true;
     bool print_gameresultscore = false;
@@ -102,40 +87,4 @@ void TaskLead::DisplaySessionHistory(bool log){
             std::cout << "score : " << 0 << " final state : " << current_state_ << std::endl;
         }
     }
-}
-
-MazeEnvironment::MazeEnvironment(const int & level) : 
-maze_(std::make_unique<MazeStructure>(level))
-{
-    task_leader_ = std::make_unique<TaskLead> (maze_.get());    
-}
-
-//actually not really needed as of now, we start the chain comm right away in signal interface, awful design needs improv.
-void MazeEnvironment::run()
-{
-    while (std::tolower(std::cin.get()) != 'q')
-    {
-        bool done = false;
-
-        int state = Reset();
-
-        while(!done)
-        {
-            
-            //praaay barr
-
-            
-        }
-    }
-}
-
-int MazeEnvironment::Reset()
-{
-    return task_leader_->Reset();
-}
-
-
-int MazeEnvironment::Step()
-{
-    //return task_leader_->Step();
 }

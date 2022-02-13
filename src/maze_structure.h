@@ -6,8 +6,7 @@
 #include <memory>
 
 class StateTransitionMap
-{
-    
+{    
 public :
 
     //returns possible transitions from each state
@@ -29,7 +28,6 @@ public :
     void FillTransitionMap() override;
 
     std::vector<int> GetLegalTransitions(const int & state) const;
-
 };
 
 class StateTransitionMapLevel2 : public StateTransitionMap
@@ -39,8 +37,6 @@ public :
     void FillTransitionMap() override;
 
     std::vector<int> GetLegalTransitions(const int & state) const;
-  
-
 };
 
 class MazeStructure

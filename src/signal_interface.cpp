@@ -31,48 +31,5 @@
 //     return GetDecodedMessage(std::string(static_cast<char*>(message.data()), message.size()));
 // }
 
-std::map<std::string, int> SignalCommInterface::GetDecodedMessage(const std::string msg)
-        {
-            std::map<std::string, int> kvp;
-            size_t start_curl = msg.find("{");
-            size_t end_curl = msg.find("}");
 
-            std::vector<int> vseps = find_all_char_positions_in_string(msg, ',');
-            std::vector<int> seps = find_all_char_positions_in_string(msg, ':');    
-
-
-            if(seps.size() == 0) {
-            std::cout << "special exit 1 in react method\n";
-            return kvp;
-            }
-
-            //this should be its own algorithm, nothing to do with the taskleader 
-            if(vseps.size() == 0)  //first element in a single item list
-                kvp[msg.substr(start_curl+1, seps[0] - 1)] = std::stof(msg.substr(seps[0]+1, end_curl));
-                else 
-                {
-                    for(int i = 0 ; i < seps.size() ; ++i) {
-                    if(i == 0) 
-                    {
-                        kvp[msg.substr(start_curl+1, seps[0] - 1)] = std::stof(msg.substr(seps[0]+1, vseps[0])); //first element
-                    }
-                    else 
-                    {
-                        if(i == vseps.size()) //last element
-                        {                   
-                            kvp[msg.substr(vseps[i-1] + 1, seps[i] - vseps[i-1] - 1)] = 
-                                std::stof(msg.substr(seps[i]+1, seps[i]+1 - end_curl - 1));
-                        }
-                        else //mid elements
-                        { 
-                            kvp[msg.substr(vseps[i-1] + 1, seps[i] - vseps[i-1] - 1)] = 
-                                std::stof(msg.substr(seps[i] + 1, vseps[i] - seps[i] - 1));
-                    
-                }                  
-            }
-
-            }
-        }
-        return kvp;
-        }
 

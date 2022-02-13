@@ -7,7 +7,8 @@
 #include <mutex>
 #include <numeric>
 
-#include "environment.h"
+#include "task_leader.h"
+#include "message_converter.h"
 
 #include "zmq.hpp"
 
@@ -25,66 +26,11 @@ struct DecodedMessage
     MessageType msg_type_;
 };
 
-class ZMQSender 
-{
-    
-    public : 
-    ZMQSender(const std::string adress) : adress_(adress), sender(ctx, zmq::socket_type::push)  {  
-        //sender.setsockopt(ZMQ_SNDHWM, 0, 0);
-        sender.connect(adress);       
-    }
-    ~ZMQSender() {
-            sender.close();
-            std::cout << "closing sender socket \n";
-        }
-
-    void run()
-    {
-        while(true) {
-
-            zmq::message_t message; 
-            if(!message_stack_.empty()) {
-                
-                zmq_sender_mtx_.lock();
-                auto data_element = message_stack_.back();
-                size_t size = strlen(data_element);
-                message.rebuild(size);
-                std::memcpy (message.data(), data_element, size);              
-                bool rc = sender.send(message);
-                message_stack_.pop_back(); 
-                zmq_sender_mtx_.unlock();
-
-                //std::cout << "messages in buffer : " << message_stack_.size() << std::endl;
-                //std::cout << "sending message " << data_element << "on port " << adress_ << std::endl;                        
-            } 
-        }
-        sender.close();
-    }
-
-    std::thread RunThread() {
-        return std::thread([=] { run(); });
-    }
-    
-    inline void QueMessage(const char* msg) {
-        zmq_sender_mtx_.lock();
-        message_stack_.emplace_back(msg);
-        //std::cout << msg << std::endl;
-        zmq_sender_mtx_.unlock();
-    }
-
-    private :
-    std::string adress_;
-    std::vector<const char*> message_stack_;
-    zmq::context_t ctx;
-    zmq::socket_t sender;
-    std::mutex zmq_sender_mtx_;   
-};
-
 class SignalCommInterface
 {
     public : 
-        SignalCommInterface(ZMQSender* sender, std::string pull_adress, TaskLead* task_leader = nullptr) : 
-            sender_(sender) , rec(ctx2, zmq::socket_type::req), pull_adress_(pull_adress), task_leader_(task_leader) 
+        SignalCommInterface(std::string pull_adress, TaskLeader* task_leader = nullptr) : 
+            rec(ctx2, zmq::socket_type::req), pull_adress_(pull_adress), task_leader_(task_leader) 
         {
                         rec.connect(pull_adress_);              
         }  
@@ -101,15 +47,13 @@ class SignalCommInterface
             zmq::message_t reply;
 
             bool is_msg_sent = true;
-            int start_state = task_leader_->GetState();
-
-            //std::cout << "starting comm... sending start message to initiate env progress\n"; 
+            int start_state = task_leader_->GetState();       
 
             task_leader_->Reset(); 
         
             std::string msg_ret;
                         
-            //StateTransitionInfo transition;   
+     
                         
             std::map<std::string, float> map_response = {
             {"state" , 3}, 
@@ -149,7 +93,7 @@ class SignalCommInterface
 
                     std::string rpl = std::string(static_cast<char*>(reply.data()), reply.size());                
 
-                    auto msg_kvp = GetDecodedMessage(rpl);  
+                    auto msg_kvp = MessageConverter::ConvertMessageToFloatMap(rpl);  
                     
                     //there could be a received signal that the network has trained. then we should simply update and reset environment 
                     //and send starting metrics. can be done in react aswell!
@@ -171,7 +115,7 @@ class SignalCommInterface
                             break;                                         
                         }
                         
-                        task_leader_->React(msg_kvp);  
+                        task_leader_->React(msg_kvp, true);  
                         //response_msg = MapToJSON(map_response).c_str(); 
                         response_msg = StateTransitionToJSON(task_leader_->GetStateTransitionInfo());
 
@@ -271,6 +215,5 @@ class SignalCommInterface
         zmq::socket_t rec;           
         std::string push_adress_;
         std::string pull_adress_;
-        TaskLead* task_leader_ = nullptr;
-        ZMQSender* sender_;
+        TaskLeader* task_leader_ = nullptr;        
 };

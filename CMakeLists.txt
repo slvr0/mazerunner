@@ -16,10 +16,5 @@ find_package(Qt5 COMPONENTS Network REQUIRED)
 
 target_include_directories(main PUBLIC)
 
-target_link_libraries(main PRIVATE maze_application maze_comm -std=c++0x -pthread -fno-stack-protector)
-
-
-
-#add_subdirectory(src)
-
+target_link_libraries(main PRIVATE user_environment env_interaction signal_comm utils -std=c++0x -pthread -fno-stack-protector)
 
