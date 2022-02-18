@@ -14,18 +14,13 @@ void EnvironmentOrganizer::run()
     {
         bool done = false;
 
-        int state = Reset();
+        Reset();
 
         while(!done)
         {            
            
         }
     }
-}
-
-int EnvironmentOrganizer::Reset()
-{
-    return task_leader_->Reset();
 }
 
 int EnvironmentOrganizer::Step()

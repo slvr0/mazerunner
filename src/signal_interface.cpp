@@ -1,35 +1,31 @@
 #include "signal_interface.h"
 
-// DecodedMessage SignalCommInterface::GetDecodedMessage(const std::string message) {
-//     DecodedMessage dmsg;
+using namespace zmq;
 
-//     //make these available globally later, topics are currently not used.
-//     const std::string rec_action_taken = "nn_send";
-//     const std::string some_other_response = "nn_whatever";
+void SignalCommInterface::run()
+{  
+    zmq::message_t reply; 
+    std::string request_msg;
 
-//     dmsg.decoded_message_ = message;
-//     return dmsg;
-    
+    while(true) { 
+        //requests information about current environment                
+        request_msg = task_leader_->ReactToZmqDecision(zmqMessageToStdString(reply));
 
-//     auto st_contains = [&](std::string substring) { 
-//         return message.find(substring) != std::string::npos; };
+        //sends it over 0mq to the net which will respond taking an action                                  
+        this->send(receiver_socket_, request_msg.c_str());  
 
-//     if(st_contains(rec_action_taken)) {
-//         dmsg.msg_type_ = MessageType::RECEIVE_ACTION_TAKEN;
-//         dmsg.decoded_message_ = message.substr(rec_action_taken.length());
-//     }
-//     else if(st_contains(some_other_response)){
-//         dmsg.msg_type_ = MessageType::INVALID;
-//         dmsg.decoded_message_ = message.substr(some_other_response.length());
-//     }    
+        //message containing network decision
+        receiver_socket_.recv (&reply);               
+    }  
+    receiver_socket_.close();
+}
 
-//     return dmsg;
-// }
-
-
-// DecodedMessage SignalCommInterface::GetDecodedMessage(zmq::message_t message) {
-//     return GetDecodedMessage(std::string(static_cast<char*>(message.data()), message.size()));
-// }
-
+bool SignalCommInterface::send(zmq::socket_t& socket, const char* data) const {
+    size_t size = strlen(data);
+    zmq::message_t message(size);
+    std::memcpy (message.data(), data, size);
+    bool rc = socket.send(message);
+    return (rc);
+}
 
 

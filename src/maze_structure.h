@@ -1,20 +1,19 @@
 #pragma once 
 
 #include <iostream>
-#include <map>
 #include <vector>
 #include <memory>
 
 class StateTransitionMap
 {    
 public :
-
-    //returns possible transitions from each state
-
+    //returns a new state and reward (in described pair order) given a state and action
     std::pair<int,float> GetTransition(const int & state, const int & action);
     
     virtual void FillTransitionMap() = 0;
-    virtual std::vector<int> GetLegalTransitions(const int & state) const = 0;
+
+    //returns possible actions given a state
+    virtual std::vector<int> GetLegalActions(const int & state) const = 0;
 
     protected : 
     int transition_map_[16*4]; //what if we want to keep this dynamic size?
@@ -27,7 +26,7 @@ public :
 
     void FillTransitionMap() override;
 
-    std::vector<int> GetLegalTransitions(const int & state) const;
+    std::vector<int> GetLegalActions(const int & state) const;
 };
 
 class StateTransitionMapLevel2 : public StateTransitionMap
@@ -36,7 +35,7 @@ public :
 
     void FillTransitionMap() override;
 
-    std::vector<int> GetLegalTransitions(const int & state) const;
+    std::vector<int> GetLegalActions(const int & state) const;
 };
 
 class MazeStructure
@@ -49,8 +48,8 @@ public :
         return 4;
     }
 
-    inline std::vector<int> GetLegalTransitions(const int & state) const{
-        return state_transition_map_->GetLegalTransitions(state);
+    inline std::vector<int> GetLegalActions(const int & state) const{
+        return state_transition_map_->GetLegalActions(state);
     }
 
     //returns possible transitions from each state

@@ -20,7 +20,7 @@ level_(level),  state_transition_map_(std::make_unique<StateTransitionMapLevel2>
      return n_tiles_;
  }
 
-std::vector<int> StateTransitionMapLevel1::GetLegalTransitions(const int & state) const
+std::vector<int> StateTransitionMapLevel1::GetLegalActions(const int & state) const
 {   
     std::vector<int> action_mask;
        //go through the returns and see which gives a non negative one response
@@ -33,7 +33,7 @@ std::vector<int> StateTransitionMapLevel1::GetLegalTransitions(const int & state
 }
 
 
-std::vector<int> StateTransitionMapLevel2::GetLegalTransitions(const int & state) const
+std::vector<int> StateTransitionMapLevel2::GetLegalActions(const int & state) const
 {
     std::vector<int> action_mask;
        //go through the returns and see which gives a non negative one response

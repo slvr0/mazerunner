@@ -94,6 +94,7 @@ class ZmqCommInterface :
                 message = self.receiver.recv()
                 str = decode_response(message) #decodes the actual values in message
 
+
                 new_state = int(float(str['state']))
                 reward = float(str['reward'])
                 do_train = int(float(str['train']))

@@ -15,17 +15,14 @@ int main(int argc, char** argv)
 	EnvironmentOrganizer environment(level);
 	SignalCommInterface sigcomm_interface(zmq_request_adress, environment.GetTaskLeader());
 
-	std::thread sigcomm_thread = sigcomm_interface.RunThread();
+	std::thread sigcomm_thread = sigcomm_interface.RunThreaded();
 
 	while (std::tolower(std::cin.get()) != 'q')
 	{
-
+		
 	}
-    
-    exit(0);
 
 	sigcomm_thread.join();
-
 	
     return 0;
 }

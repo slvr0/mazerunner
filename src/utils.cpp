@@ -1,5 +1,6 @@
 #include "utils.h"
 
+#include <iostream>
 
 std::vector<int> Utils::FindCharIdcs(std::string sample, char findIt)
 {
@@ -9,7 +10,7 @@ std::vector<int> Utils::FindCharIdcs(std::string sample, char findIt)
     return characterLocations;
 }
 
-std::map<std::string, int> Utils::ConvertStringToIntMap(const std::string msg)
+std::map<std::string, int> Utils::ConvertJSONToIntMap(const std::string msg)
 {
     //improve algorithm by fixing nested dicts and accepting array formatting
     std::map<std::string, int> kvp;
@@ -45,7 +46,7 @@ std::map<std::string, int> Utils::ConvertStringToIntMap(const std::string msg)
     return kvp;
 }
 
-std::map<std::string, float> Utils::ConvertStringToFloatMap(const std::string msg)
+std::map<std::string, float> Utils::ConvertJSONToFloatMap(const std::string msg)
 {
     //improve algorithm by fixing nested dicts and accepting array formatting
     std::map<std::string, float> kvp;
@@ -79,4 +80,13 @@ std::map<std::string, float> Utils::ConvertStringToFloatMap(const std::string ms
         }
     }
     return kvp;
+}
+
+template <typename T>
+void Utils::PrintMap(std::map<std::string, T> __map){
+    std::cout << "\n";
+    for(auto & [k, v] : __map){
+        std::cout << k << ":" << std::to_string(v) << std::endl;
+    }
+    std::cout << "\n";
 }

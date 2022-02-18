@@ -16,7 +16,7 @@ add_library(
     task_leader.h
     task_leader.cpp    
     env_organizer.h
-    env_organizer.cpp
+    env_organizer.cpp    
 )   
 
 add_library(
@@ -29,6 +29,7 @@ add_library(
     utils    
     utils.h
     utils.cpp
+
 )
 
 find_package(PkgConfig)
@@ -47,4 +48,6 @@ find_library(ZeroMQ_LIBRARY
 
 target_include_directories(signal_comm PRIVATE paho.mqtt.cpp/src/ paho.mqtt.cpp/src/mqtt/)
 target_link_libraries(signal_comm PRIVATE env_interaction paho-mqttpp3 paho-mqtt3as ${ZeroMQ_LIBRARY})
+
+target_link_libraries(env_interaction PRIVATE utils)
 

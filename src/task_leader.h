@@ -8,16 +8,25 @@
 
 //should probably be a fixed state representation of 0/1/2 dimensions. And the msg converter needs to have a fixed input of dimension.
 
+#define DEBUG 0
+
+#define KEY_STATE "state"
+#define KEY_ACTION "action"
+#define KEY_TRAINED "trained"
+
 class TaskLeader
 {
 public : 
     TaskLeader(CustomEnvironment* custom_env = nullptr);
 
-    void  React(std::map<std::string, float> input_args,  bool mask_legal = true);
+    //updates state transition from a decision response
+    void React(std::map<std::string, float> input_args,  bool mask_legal = true);
+    
+    //entry point to React method
+    std::string ReactToZmqDecision(std::string message);
 
-    //returns startstate
-    int Reset();
-    void Report();
+    //resets the environment and parameters in transition_
+    void Reset();
 
     inline StateTransitionInfo GetStateTransitionInfo() const {
         return transition_;
@@ -27,19 +36,20 @@ public :
         return env_->GetOutputDimension();
     }
     
-    inline std::vector<int> RequestLegalTransitions(StateTransitionInfo state_transition_info){
-        return env_->GetLegalTransitions(state_transition_info);
+    //requests environments legal actions in environment, forwarded as a mask argument in json
+    inline std::vector<int> RequestLegalActions(StateTransitionInfo state_transition_info) {
+        return env_->GetLegalActions(state_transition_info);
     }   
 
-    inline void SetEnvironmentInterface(CustomEnvironment* env) { env_ = env;}
-    
-    inline EnvironmentStatus GetStatus() const 
-    {
-        return status_;
+    inline void SetEnvironmentInterface(CustomEnvironment* env) { 
+        env_ = env;
     }
+    
+    inline EnvironmentStatus GetStatus() const {    
+        return status_;
+    } 
 
-    void OrderTrainSession()
-    {
+    inline void OrderTrainSession() {
         transition_.train = 1;
     }
     
@@ -47,15 +57,27 @@ public :
         return current_state_;
     }
 
+    template <typename T> //linking error from utils.cpp
+    void PPrintMap(std::map<std::string, T> __map){
+        std::cout << "\n";
+        for(auto & [k, v] : __map){
+            std::cout << k << ":" << std::to_string(v) << std::endl;
+        }
+        std::cout << "\n";
+    }
+
+    std::string StateTransitionToJSON(StateTransitionInfo transition) const;
+    std::string StateTransitionToJSON() const;
+
     void DisplaySessionHistory(bool log = false);
     
-    private: 
-    CustomEnvironment* env_ = nullptr;
-    std::vector<int> markov_chain_;  
-    int current_state_;  
-    EnvironmentStatus status_;
-    int current_step_;
+private: 
+    CustomEnvironment*      env_ = nullptr;
+    EnvironmentStatus       status_;
+    StateTransitionInfo     transition_;
 
-    StateTransitionInfo transition_;
-   
+    std::vector<int>        markov_decision_chain_;  
+    int                     current_state_;     
+    int                     current_step_;
+    bool                    session_initiated_ = false;       
 };

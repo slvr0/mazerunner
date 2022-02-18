@@ -16,7 +16,10 @@ public :
         return task_leader_.get();
     }
     void run();
-    int Reset();
+    
+    inline void Reset()  {
+        task_leader_->Reset();
+    }
 
 private: 
     std::unique_ptr<TaskLeader> task_leader_ = nullptr;

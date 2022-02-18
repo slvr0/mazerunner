@@ -16,7 +16,7 @@ public :
         return output_dimensions_;
     }
         
-    inline std::vector<int> GetLegalTransitions(StateTransitionInfo state_transition_info){
+    inline std::vector<int> GetLegalActions(StateTransitionInfo state_transition_info){
         //implement me
         return std::vector<int> {1,2,3};
     }

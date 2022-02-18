@@ -6,8 +6,8 @@
 class MessageConverter 
 {
 public : 
-    static std::map<std::string, float> ConvertMessageToFloatMap(const std::string & msg ) {
-        return Utils::ConvertStringToFloatMap(msg);
+    static std::map<std::string, float> ConvertJSONToFloatMap(const std::string & msg ) {
+        return Utils::ConvertJSONToFloatMap(msg);
     }
 
 };
